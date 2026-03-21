@@ -1,0 +1,193 @@
+# MCP Security Scanner Default Configuration
+# Copy this file and customize for your MCP server
+
+# Server identity
+server:
+  name: "mcp-server"
+  version: "1.0.0"
+  environment: "production"  # development | staging | production
+
+# Authentication settings
+authentication:
+  enabled: true
+  token_algorithm: "RS256"  # RS256 | HS256 | EdDSA
+  secret: "${MCP_SECRET_KEY}"  # Use env vars, never hardcode
+  token_expiry_seconds: 3600
+  refresh_enabled: true
+
+# Session security
+session:
+  secure_cookie: true
+  http_only: true
+  same_site: "strict"
+  timeout_seconds: 3600  # 1 hour
+
+# Rate limiting
+rate_limiting:
+  enabled: true
+  requests_per_minute: 100
+  burst_limit: 20
+  include_headers: true
+  per_api_key: true
+  tier_limits:
+    free: 60
+    pro: 300
+    enterprise: 1000
+  geo_limits: true
+
+# Resource limits
+resources:
+  max_request_size: 10485760  # 10MB
+  max_query_depth: 10
+  max_connections: 1000
+  request_timeout: 60  # seconds
+
+# Network security
+network:
+  encrypt_data: true
+  tls:
+    min_version: "1.3"
+    verify_certs: true
+    cipher_suites:
+      - "TLS_AES_256_GCM_SHA384"
+      - "TLS_CHACHA20_POLY1305_SHA256"
+  block_internal: true
+  url_allowlist: []
+  allowed_protocols:
+    - "https"
+
+# Logging configuration
+logging:
+  level: "INFO"  # DEBUG | INFO | WARN | ERROR
+  log_sensitive: false
+  redact_fields:
+    - "password"
+    - "token"
+    - "secret"
+    - "api_key"
+    - "credential"
+    - "authorization"
+  file_mode: 384  # 0600 octal
+  format: "json"
+
+# Data handling
+data:
+  classification_enabled: true
+  pii_detection: true
+  retention_policy:
+    default_days: 90
+    pii_days: 30
+    audit_days: 365
+
+# Error handling
+errors:
+  verbose: false  # Never true in production
+  include_stack_trace: false
+  custom_messages: true
+
+# Tool definitions (MCP tools)
+tools:
+  - name: "shell_exec"
+    type: "shell"
+    description: "Execute shell commands"
+    requires_auth: true
+    sandbox:
+      enabled: true
+      timeout_seconds: 60
+      resource_limits:
+        cpu: 0.5
+        memory: "256MB"
+      container:
+        privileged: false
+        read_only_root: true
+    parameters:
+      cmd:
+        sanitize: true
+        allowlist: ["ls", "cat", "grep", "echo"]
+    filesystem:
+      allowed_paths:
+        - "/tmp"
+      restrict_base_dir: true
+    network:
+      block_internal: true
+      allowed_protocols: ["https"]
+    
+  - name: "file_reader"
+    type: "file_read"
+    description: "Read files from allowed directories"
+    requires_auth: true
+    sandbox:
+      enabled: true
+      timeout_seconds: 30
+    parameters:
+      path:
+        sanitize: true
+        restrict_base_dir: true
+        base_dir: "/data"
+    filesystem:
+      allowed_paths:
+        - "/data"
+        - "/tmp"
+      file_mode: 384  # 0600
+    
+  - name: "http_fetch"
+    type: "http"
+    description: "Fetch external URLs"
+    requires_auth: true
+    sandbox:
+      enabled: true
+      timeout_seconds: 30
+    network:
+      block_internal: true
+      url_allowlist:
+        - "https://api.example.com"
+      allowed_protocols:
+        - "https"
+
+# API endpoints
+endpoints:
+  - path: "/api/v1/data"
+    method: "GET"
+    requires_auth: true
+    rate_limit:
+      requests_per_minute: 50
+    pagination: true
+    max_results: 100
+    
+  - path: "/api/v1/export"
+    method: "POST"
+    requires_auth: true
+    rate_limit:
+      requests_per_minute: 10
+    requires_approval: true
+    
+  - path: "/auth/login"
+    method: "POST"
+    requires_auth: false
+    rate_limit:
+      requests_per_minute: 10
+      login_attempts: 5
+    
+  - path: "/health"
+    method: "GET"
+    requires_auth: false
+    rate_limit:
+      requests_per_minute: 60
+
+# Handlers
+handlers:
+  - name: "data_handler"
+    access_level: "restricted"
+    output_validation: true
+    operations: ["read", "query"]
+    requires_approval: false
+    
+  - name: "export_handler"
+    access_level: "restricted"
+    output_validation: true
+    operations: ["export", "download"]
+    requires_approval: true
+
+# Security flags
+timing_safe_compare: true
+development: false
