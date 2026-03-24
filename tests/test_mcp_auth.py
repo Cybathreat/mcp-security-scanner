@@ -10,7 +10,7 @@ import yaml
 import sys
 from pathlib import Path
 
-# Add src to path
+# Add src to path (modules are in src/)
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from mcp_auth import MCPAuthScanner, AuthRiskLevel, scan_mcp_auth

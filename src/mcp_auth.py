@@ -112,10 +112,10 @@ class MCPAuthScanner:
     def _scan_hardcoded_creds(self, config_data: Dict, findings: List[AuthFinding]):
         """Detect hardcoded credentials in configuration."""
         cred_patterns = [
-            (r"password\s*[=:]\s*['\"]([^'\"]+)['\"]", "Hardcoded Password"),
-            (r"api_key\s*[=:]\s*['\"]([^'\"]+)['\"]", "Hardcoded API Key"),
-            (r"secret\s*[=:]\s*['\"]([^'\"]+)['\"]", "Hardcoded Secret"),
-            (r"token\s*[=:]\s*['\"]([^'\"]+)['\"]", "Hardcoded Token"),
+            (r"['\"]?password['\"]?\s*[=:]\s*['\"]([^'\"]+)['\"]", "Hardcoded Password"),
+            (r"['\"]?api_key['\"]?\s*[=:]\s*['\"]([^'\"]+)['\"]", "Hardcoded API Key"),
+            (r"['\"]?secret['\"]?\s*[=:]\s*['\"]([^'\"]+)['\"]", "Hardcoded Secret"),
+            (r"['\"]?token['\"]?\s*[=:]\s*['\"]([^'\"]+)['\"]", "Hardcoded Token"),
         ]
         
         config_str = json.dumps(config_data)

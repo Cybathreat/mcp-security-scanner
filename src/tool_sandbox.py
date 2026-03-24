@@ -204,11 +204,12 @@ class ToolSandboxValidator:
         fs_config = tool_config.get("filesystem", {})
         
         # Check for overly permissive file creation
-        if fs_config.get("file_mode", 0o777) > 0o644:
+        file_mode = fs_config.get("file_mode", 0o777)
+        if file_mode and file_mode > 0o644:
             findings.append(SandboxFinding(
                 finding_id="MCP-Sandbox-007",
                 title="Overly Permissive File Mode",
-                description=f"Files created with mode {oct(fs_config.get('file_mode'))}",
+                description=f"Files created with mode {oct(file_mode)}",
                 risk_level=SandboxRiskLevel.MEDIUM.value,
                 affected_tool=tool_name,
                 vector="World-readable/writable files → data exposure",

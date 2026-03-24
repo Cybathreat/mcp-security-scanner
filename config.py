@@ -107,8 +107,8 @@ class ScannerConfig:
 
 # Default secrets patterns for detection
 DEFAULT_SECRETS_PATTERNS = [
-    r'(?i)api[_-]?key\s*[=:]\s*["\']?[a-zA-Z0-9]{16,}',
-    r'(?i)secret[_-]?key\s*[=:]\s*["\']?[a-zA-Z0-9]{16,}',
+    r'(?i)api[_-]?key\s*[=:]\s*["\']?[a-zA-Z0-9_-]{16,}',
+    r'(?i)secret[_-]?key\s*[=:]\s*["\']?[a-zA-Z0-9_-]{16,}',
     r'(?i)password\s*[=:]\s*["\']?[^\s"\']+',
     r'(?i)bearer\s+[a-zA-Z0-9\-_]+\.[a-zA-Z0-9\-_]+',
     r'(?i)private[_-]?key\s*[=:]\s*["\']?-----BEGIN',
