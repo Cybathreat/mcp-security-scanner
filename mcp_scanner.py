@@ -199,9 +199,47 @@ class MCPScanner:
                                 ))
                     except:
                         pass
+                
+                # Check for rate limiting on auth endpoints (enhancement)
+                rate_limit_findings = await self._check_rate_limiting(session, base_url)
+                findings.extend(rate_limit_findings)
         
         except Exception as e:
             pass  # Connection issues handled gracefully
+        
+        return findings
+    
+    async def _check_rate_limiting(self, session: aiohttp.ClientSession, base_url: str) -> List[Finding]:
+        """Check if authentication endpoints implement rate limiting."""
+        findings = []
+        auth_endpoints = ['/auth', '/login', '/api/auth', '/authenticate']
+        
+        for endpoint in auth_endpoints:
+            try:
+                # Send rapid requests to detect rate limiting
+                responses = []
+                for _ in range(5):
+                    async with session.post(f"{base_url}{endpoint}", json={}, timeout=3) as resp:
+                        responses.append(resp.status)
+                
+                # If all requests succeed without 429, rate limiting may be missing
+                if all(r == 200 for r in responses):
+                    findings.append(Finding(
+                        id=f"RATE-{base_url.split('://')[1].split(':')[0]}-001",
+                        severity="MEDIUM",
+                        category="auth",
+                        title="No Rate Limiting Detected",
+                        description=f"Authentication endpoint {endpoint} does not appear to implement rate limiting, making it vulnerable to brute force attacks.",
+                        target_host=base_url,
+                        target_port=0,
+                        evidence="5 rapid requests all returned HTTP 200",
+                        remediation="Implement rate limiting (e.g., max 5 attempts per minute per IP) on authentication endpoints.",
+                        cwe_id="CWE-307",
+                        cvss_score=5.3
+                    ))
+                    break
+            except:
+                pass
         
         return findings
     

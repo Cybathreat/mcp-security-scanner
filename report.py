@@ -6,7 +6,7 @@ Generates HTML and JSON security audit reports.
 import os
 import json
 import html
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, asdict
 
@@ -210,7 +210,7 @@ def create_scan_result(
 ) -> ScanResult:
     """Helper to create a ScanResult with computed summary."""
     if scan_id is None:
-        scan_id = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        scan_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     
     summary = {'CRITICAL': 0, 'HIGH': 0, 'MEDIUM': 0, 'LOW': 0, 'INFO': 0}
     for f in findings:
@@ -219,7 +219,7 @@ def create_scan_result(
     
     return ScanResult(
         scan_id=scan_id,
-        timestamp=datetime.utcnow().isoformat(),
+        timestamp=datetime.now(timezone.utc).isoformat(),
         targets_scanned=targets_scanned,
         findings=findings,
         summary=summary,
