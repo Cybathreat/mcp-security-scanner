@@ -419,5 +419,63 @@ class TestSecretsPatterns:
         assert matched is True
 
 
+class TestRateLimiting:
+    """Tests for rate limiting detection."""
+    
+    @pytest.mark.asyncio
+    async def test_rate_limiting_detection_with_429(self):
+        """Test that rate limiting is detected when 429 responses are returned."""
+        from mcp_scanner import MCPScanner
+        from config import ScannerConfig, ScanTarget
+        
+        config = ScannerConfig()
+        scanner = MCPScanner(config)
+        target = ScanTarget(host="localhost", port=8080)
+        
+        with patch('aiohttp.ClientSession') as mock_session:
+            mock_response = AsyncMock()
+            mock_response.status = 429
+            mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+            mock_response.__aexit__ = AsyncMock(return_value=None)
+            
+            mock_session_instance = MagicMock()
+            mock_session_instance.get = MagicMock(return_value=mock_response)
+            mock_session.return_value.__aenter__ = AsyncMock(return_value=mock_session_instance)
+            mock_session.return_value.__aexit__ = AsyncMock(return_value=None)
+            
+            findings = await scanner._check_rate_limiting(target)
+            
+            assert len(findings) > 0
+            assert any(f.id.startswith("RATE-") for f in findings)
+            assert any(f.severity == "INFO" for f in findings)
+    
+    @pytest.mark.asyncio
+    async def test_no_rate_limiting_detected(self):
+        """Test that missing rate limiting is flagged when all requests succeed."""
+        from mcp_scanner import MCPScanner
+        from config import ScannerConfig, ScanTarget
+        
+        config = ScannerConfig()
+        scanner = MCPScanner(config)
+        target = ScanTarget(host="localhost", port=8080)
+        
+        with patch('aiohttp.ClientSession') as mock_session:
+            mock_response = AsyncMock()
+            mock_response.status = 200
+            mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+            mock_response.__aexit__ = AsyncMock(return_value=None)
+            
+            mock_session_instance = MagicMock()
+            mock_session_instance.get = MagicMock(return_value=mock_response)
+            mock_session.return_value.__aenter__ = AsyncMock(return_value=mock_session_instance)
+            mock_session.return_value.__aexit__ = AsyncMock(return_value=None)
+            
+            findings = await scanner._check_rate_limiting(target)
+            
+            assert len(findings) > 0
+            assert any(f.id.startswith("RATE-") for f in findings)
+            assert any(f.severity == "MEDIUM" for f in findings)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

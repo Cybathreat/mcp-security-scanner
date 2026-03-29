@@ -92,6 +92,10 @@ class MCPScanner:
                 config_findings = await self._check_config_exposure(target)
                 findings.extend(config_findings)
             
+            # Check rate limiting
+            rate_findings = await self._check_rate_limiting(target)
+            findings.extend(rate_findings)
+            
             self.scanned_targets += 1
             
         except Exception as e:
@@ -343,6 +347,67 @@ class MCPScanner:
                                     break  # One finding per target
                     except:
                         pass
+        
+        except Exception as e:
+            pass
+        
+        return findings
+    
+    async def _check_rate_limiting(self, target: ScanTarget) -> List[Finding]:
+        """Check if target implements rate limiting by sending rapid requests."""
+        findings = []
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                base_url = f"{target.protocol}://{target.host}:{target.port}"
+                endpoint = f"{base_url}/health"
+                
+                status_codes = []
+                response_times = []
+                
+                # Send 10 rapid requests
+                for i in range(10):
+                    start = time.time()
+                    try:
+                        async with session.get(endpoint, timeout=5) as resp:
+                            status_codes.append(resp.status)
+                            response_times.append(time.time() - start)
+                    except Exception as e:
+                        status_codes.append(429 if "429" in str(e) else 503)
+                        response_times.append(time.time() - start)
+                
+                # Check for 429 Too Many Requests
+                if 429 in status_codes:
+                    findings.append(Finding(
+                        id=f"RATE-{target.host}-{target.port}-001",
+                        severity="INFO",
+                        category="security",
+                        title="Rate Limiting Detected",
+                        description="Target implements rate limiting (429 responses observed).",
+                        target_host=target.host,
+                        target_port=target.port,
+                        evidence=f"429 response after {status_codes.index(429) + 1} requests",
+                        remediation="N/A - Rate limiting is properly configured.",
+                        cwe_id="CWE-770",
+                        cvss_score=0.0
+                    ))
+                else:
+                    # No rate limiting detected
+                    avg_response_time = sum(response_times) / len(response_times)
+                    if avg_response_time < 0.5:  # Fast responses, no throttling
+                        findings.append(Finding(
+                            id=f"RATE-{target.host}-{target.port}-001",
+                            severity="MEDIUM",
+                            category="security",
+                            title="No Rate Limiting Detected",
+                            description="Target does not appear to implement rate limiting. All 10 rapid requests succeeded without throttling.",
+                            target_host=target.host,
+                            target_port=target.port,
+                            evidence=f"All requests returned 200, avg response time: {avg_response_time:.3f}s",
+                            remediation="Implement rate limiting to prevent abuse and DoS attacks. Use token bucket or sliding window algorithms.",
+                            cwe_id="CWE-770",
+                            cvss_score=5.3
+                        ))
         
         except Exception as e:
             pass
