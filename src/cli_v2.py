@@ -34,6 +34,7 @@ from rate_limiting import detect_rate_limit_issues
 from server_fingerprint import fingerprint_mcp_server
 from compliance_mapping import map_findings_to_compliance
 from output import generate_report, write_report_files
+from secrets_detection import scan_mcp_secrets
 
 
 class MCPScannerCLI:
@@ -133,6 +134,7 @@ class MCPScannerCLI:
             "sandbox": ("Tool Sandbox Validator", validate_tool_sandbox),
             "exfil": ("Data Exfil Detector", detect_data_exfil_vectors),
             "rate": ("Rate Limit Detector", detect_rate_limit_issues),
+            "secrets": ("Secrets Detection", scan_mcp_secrets),
         }
         
         self.print_header()
@@ -151,7 +153,7 @@ class MCPScannerCLI:
             ) as progress:
                 for module in modules:
                     if module == "all":
-                        modules_to_run = ["auth", "sandbox", "exfil", "rate"]
+                        modules_to_run = ["auth", "sandbox", "exfil", "rate", "secrets"]
                     else:
                         modules_to_run = [module]
                     
@@ -187,7 +189,7 @@ class MCPScannerCLI:
             # Simple progress without rich
             for module in modules:
                 if module == "all":
-                    modules_to_run = ["auth", "sandbox", "exfil", "rate"]
+                    modules_to_run = ["auth", "sandbox", "exfil", "rate", "secrets"]
                 else:
                     modules_to_run = [module]
                 
@@ -296,7 +298,7 @@ Examples:
     scan_parser.add_argument(
         "-m", "--modules",
         nargs="+",
-        choices=["auth", "sandbox", "exfil", "rate", "all"],
+        choices=["auth", "sandbox", "exfil", "rate", "secrets", "all"],
         default=["all"],
         help="Security modules to run (default: all)"
     )

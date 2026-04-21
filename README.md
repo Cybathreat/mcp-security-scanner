@@ -12,6 +12,7 @@ MCP servers provide AI models with access to external tools and data sources. Th
 - **Tool Sandbox Validator**: Identifies command injection, path traversal, SSRF, container escape vectors
 - **Data Exfiltration Detector**: Finds insecure data transmission, logging leaks, missing classification
 - **Rate Limiting Analyzer**: Detects missing rate limits, DDoS amplification, resource exhaustion risks
+- **Secrets Detection**: Scans for hardcoded API keys, tokens, passwords, database credentials, and private keys
 
 ## Installation
 
@@ -149,6 +150,26 @@ Scans for:
 - Query complexity limits
 
 **CWEs**: CWE-400, CWE-307, CWE-208
+
+### 5. Secrets Detection (secrets)
+
+Scans for:
+- AWS access keys and secret keys
+- Private keys (RSA, EC, DSA, OPENSSH)
+- Generic API keys and bearer tokens
+- Database connection strings with credentials
+- JWT secrets and OAuth client secrets
+- GitHub tokens (ghp_, gho_, ghu_, ghs_, ghr_)
+- Slack tokens (xoxb-, xoxa-, xoxp-, xoxr-)
+- Stripe API keys (sk_live_, rk_live_, pk_live_)
+- SendGrid API keys
+- Hardcoded passwords
+- Encryption keys
+- Webhook secrets
+
+**CWEs**: CWE-798, CWE-321
+
+**Detection Patterns**: 15+ high-confidence secret patterns with automatic masking for safe reporting.
 
 ## Configuration
 
